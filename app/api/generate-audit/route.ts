@@ -181,10 +181,17 @@ ${text}
     const audit = validateAudit(parsed);
 
     return NextResponse.json({ audit });
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: error?.message || "Failed to generate audit." },
-      { status: 500 }
-    );
-  }
+} catch (error: any) {
+  console.error("GENERATE_AUDIT_ERROR", error);
+
+  return NextResponse.json(
+    {
+      error: error?.message || "Failed to generate audit.",
+      details:
+        error?.response?.data ||
+        error?.cause ||
+        null,
+    },
+    { status: 500 }
+  );
 }
