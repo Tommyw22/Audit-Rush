@@ -37,28 +37,48 @@ function stripHtml(html: string) {
 }
 
 async function fetchWebsiteText(url: string) {
-  const target = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+  const normalized = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+  const attempts = [
+    normalized,
+    normalized.replace(/^https:\/\//i, "http://"),
+  ];
 
-  const res = await fetch(target, {
-    headers: {
-      "User-Agent": "Mozilla/5.0 AuditRush/1.0",
-      Accept: "text/html,application/xhtml+xml",
-    },
-    cache: "no-store",
-  });
+  let lastError: string | null = null;
 
-  if (!res.ok) {
-    throw new Error(`Could not fetch website: ${res.status}`);
+  for (const target of attempts) {
+    try {
+      const res = await fetch(target, {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+          Accept:
+            "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+          "Accept-Language": "en-US,en;q=0.9",
+        },
+        redirect: "follow",
+        cache: "no-store",
+      });
+
+      if (!res.ok) {
+        lastError = `Could not fetch website: ${res.status}`;
+        continue;
+      }
+
+      const html = await res.text();
+      const text = stripHtml(html).slice(0, 12000);
+
+      if (!text || text.length < 200) {
+        lastError = "Website text was too thin to analyze.";
+        continue;
+      }
+
+      return { target, text };
+    } catch (error: any) {
+      lastError = error?.message || String(error);
+    }
   }
 
-  const html = await res.text();
-  const text = stripHtml(html).slice(0, 12000);
-
-  if (!text || text.length < 200) {
-    throw new Error("Website text was too thin to analyze.");
-  }
-
-  return { target, text };
+  throw new Error(lastError || "Website fetch failed.");
 }
 
 function parseJsonSafely(raw: string) {
