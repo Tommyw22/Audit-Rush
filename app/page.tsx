@@ -231,17 +231,29 @@ export default function Page() {
               </Box>
 
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
-                {[
-                  [Search, "Analyze site", "Pull homepage copy, offer clarity, trust signals, and CTA quality."],
-                  [Sparkles, "Generate assets", "Produce a deliverable the owner can use immediately after purchase."],
-                  [CreditCard, "Get paid", "Preview enough to sell. Lock exports and delivery behind Stripe checkout."]
-                ].map(([Icon, title, text]) => (
-                  <Box key={String(title)}>
-                    <div>{/* @ts-expect-error icon */}<Icon size={18} /></div>
-                    <div style={{ fontWeight: 700, marginTop: 8 }}>{title}</div>
-                    <div style={{ color: "#a1a1aa", marginTop: 8 }}>{text}</div>
-                  </Box>
-                ))}
+                  {[
+                    {
+                     Icon: Search,
+                     title: "Analyze site",
+                     text: "Pull homepage copy, offer clarity, trust signals, and CTA quality.",
+                    },
+                    {
+                     Icon: Sparkles,
+                     title: "Generate assets",
+                     text: "Produce a deliverable the owner can use immediately after purchase.",
+                    },
+                    {
+                     Icon: CreditCard,
+                     title: "Get paid",
+                     text: "Preview enough to sell. Lock exports and delivery behind Stripe checkout.",
+                    },
+                  ].map((item) => (
+                    <Box key={item.title}>
+                    <div><item.Icon size={18} /></div>
+                     <div style={{ fontWeight: 700, marginTop: 8 }}>{item.title}</div>
+                     <div style={{ color: "#a1a1aa", marginTop: 8 }}>{item.text}</div>
+                    </Box>
+                  ))}
               </div>
             </section>
 
