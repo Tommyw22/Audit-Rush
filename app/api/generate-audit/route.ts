@@ -112,16 +112,32 @@ export async function POST(req: NextRequest) {
 
     if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json(
-        { error: "Missing OPENAI_API_KEY in environment variables." },
+        { error: "Missing OPENAI_API_KEY." },
         { status: 500 }
       );
     }
 
-    const { target, text } = await fetchWebsiteText(website);
+    const model = process.env.OPENAI_MODEL || "gpt-4.1";
 
-    const model = process.env.OPENAI_MODEL || "gpt-5.4";
+    let target = "";
+    let text = "";
 
-    const prompt = `
+    try {
+      const fetched = await fetchWebsiteText(website);
+      target = fetched.target;
+      text = fetched.text;
+    } catch (error: any) {
+      return NextResponse.json(
+        {
+          error: "Website fetch failed.",
+          details: error?.message || String(error),
+        },
+        { status: 500 }
+      );
+    }
+
+    try {
+      const prompt = `
 You are an elite conversion strategist building a MONEY LEAK REPORT for a small business.
 
 Business name: ${businessName}
@@ -130,13 +146,6 @@ Website: ${target}
 Extra notes: ${notes || "None"}
 
 Analyze the website text below and return ONLY valid JSON.
-
-GOALS:
-- Find the top conversion leaks hurting leads and revenue.
-- Make the output concrete, sales-oriented, and immediately usable.
-- Do not sound generic.
-- Tailor the advice to the niche.
-- Make the report feel premium and actionable.
 
 RETURN THIS EXACT JSON SHAPE:
 {
@@ -160,37 +169,39 @@ RULES:
 - issues: 3 to 5 items
 - reviewReplies: exactly 5
 - socialPosts: exactly 7
-- headline: one sharp summary sentence
-- rewrittenHero: a high-converting homepage headline
-- cta: one short CTA
-- revenueLeakEstimate: estimate in plain English, like "If this page converts even 1 extra lead per 100 visitors, that could mean 10-20 more booked consults per month depending on traffic."
-- salesEmail: complete outreach follow-up email
-- notes: brief summary of what this business should fix first
 
 WEBSITE TEXT:
 ${text}
-`.trim();
+      `.trim();
 
-    const response = await client.responses.create({
-      model,
-      input: prompt,
-    });
+      const response = await client.responses.create({
+        model,
+        input: prompt,
+      });
 
-    const raw = response.output_text || "";
-    const parsed = parseJsonSafely(raw);
-    const audit = validateAudit(parsed);
+      const raw = response.output_text || "";
+      const parsed = parseJsonSafely(raw);
+      const audit = validateAudit(parsed);
 
-    return NextResponse.json({ audit });
+      return NextResponse.json({ audit });
+    } catch (error: any) {
+      return NextResponse.json(
+        {
+          error: "OpenAI generation failed.",
+          details:
+            error?.message ||
+            error?.response?.data ||
+            error?.cause ||
+            String(error),
+        },
+        { status: 500 }
+      );
+    }
   } catch (error: any) {
-    console.error("GENERATE_AUDIT_ERROR", error);
-
     return NextResponse.json(
       {
-        error: error?.message || "Failed to generate audit.",
-        details:
-          error?.response?.data ||
-          error?.cause ||
-          null,
+        error: "Unexpected server error.",
+        details: error?.message || String(error),
       },
       { status: 500 }
     );
