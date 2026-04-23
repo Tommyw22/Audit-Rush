@@ -1,6 +1,5 @@
 "use client";
-
-import { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Briefcase,
@@ -249,7 +248,7 @@ export default function Page() {
                     },
                   ].map((item) => (
                     <Box key={item.title}>
-                    <div><item.Icon size={18} /></div>
+                    <div>{React.createElement(item.Icon, { size: 18 })}</div>
                      <div style={{ fontWeight: 700, marginTop: 8 }}>{item.title}</div>
                      <div style={{ color: "#a1a1aa", marginTop: 8 }}>{item.text}</div>
                     </Box>
